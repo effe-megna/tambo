@@ -28,6 +28,12 @@ export type {
 } from "./tambo-prop-stream-provider";
 export { TamboContext, TamboProvider, useTambo } from "./tambo-provider";
 export {
+  TamboProjectProvider,
+  useTamboProject,
+  type TamboProjectContextProps,
+  type TamboProjectProviderProps,
+} from "./tambo-project-provider";
+export {
   TamboRegistryProvider,
   useTamboRegistry,
   type TamboRegistryContext,

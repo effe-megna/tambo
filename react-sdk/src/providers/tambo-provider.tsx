@@ -39,6 +39,10 @@ import {
   TamboThreadProviderProps,
   useTamboThread,
 } from "./tambo-thread-provider";
+import {
+  TamboProjectProvider,
+  TamboProjectProviderProps,
+} from "./tambo-project-provider";
 
 /**
  * The TamboProvider gives full access to the whole Tambo API. This includes the
@@ -51,9 +55,11 @@ import {
  * @param props.environment - The environment to use for the Tambo API
  * @param props.tools - The tools to register
  * @param props.streaming - Whether to stream the response by default. Defaults to true.
+ * @param props.autoGenerateNameThreshold - The threshold at which the thread name will be auto-generated. Defaults to 3. Pass null to disable.
  * @param props.contextHelpers - Configuration for which context helpers are enabled/disabled
  * @param props.userToken - The JWT id token to use to identify the user in the Tambo API. (preferred over contextKey)
  * @param props.contextKey - Optional context key to be used in the thread input provider
+ * @param props.projectId - Optional project ID to use. If provided, no API call will be made to fetch current project.
  * @returns The TamboProvider component
  */
 export const TamboProvider: React.FC<
@@ -62,7 +68,8 @@ export const TamboProvider: React.FC<
       TamboRegistryProviderProps &
       TamboThreadProviderProps &
       TamboContextHelpersProviderProps &
-      TamboThreadInputProviderProps
+      TamboThreadInputProviderProps &
+      TamboProjectProviderProps
   >
 > = ({
   children,
@@ -73,8 +80,10 @@ export const TamboProvider: React.FC<
   environment,
   tools,
   streaming,
+  autoGenerateNameThreshold,
   contextHelpers,
   contextKey,
+  projectId,
   onCallUnregisteredTool,
 }) => {
   // Should only be used in browser
@@ -89,23 +98,28 @@ export const TamboProvider: React.FC<
       environment={environment}
       userToken={userToken}
     >
-      <TamboRegistryProvider
-        components={components}
-        tools={tools}
-        onCallUnregisteredTool={onCallUnregisteredTool}
-      >
-        <TamboContextHelpersProvider contextHelpers={contextHelpers}>
-          <TamboThreadProvider streaming={streaming}>
-            <TamboThreadInputProvider contextKey={contextKey}>
-              <TamboComponentProvider>
-                <TamboInteractableProvider>
-                  <TamboCompositeProvider>{children}</TamboCompositeProvider>
-                </TamboInteractableProvider>
-              </TamboComponentProvider>
-            </TamboThreadInputProvider>
-          </TamboThreadProvider>
-        </TamboContextHelpersProvider>
-      </TamboRegistryProvider>
+      <TamboProjectProvider projectId={projectId}>
+        <TamboRegistryProvider
+          components={components}
+          tools={tools}
+          onCallUnregisteredTool={onCallUnregisteredTool}
+        >
+          <TamboContextHelpersProvider contextHelpers={contextHelpers}>
+            <TamboThreadProvider
+              streaming={streaming}
+              autoGenerateNameThreshold={autoGenerateNameThreshold}
+            >
+              <TamboThreadInputProvider contextKey={contextKey}>
+                <TamboComponentProvider>
+                  <TamboInteractableProvider>
+                    <TamboCompositeProvider>{children}</TamboCompositeProvider>
+                  </TamboInteractableProvider>
+                </TamboComponentProvider>
+              </TamboThreadInputProvider>
+            </TamboThreadProvider>
+          </TamboContextHelpersProvider>
+        </TamboRegistryProvider>
+      </TamboProjectProvider>
     </TamboClientProvider>
   );
 };

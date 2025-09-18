@@ -1,6 +1,7 @@
 import type TamboAI from "@tambo-ai/typescript-sdk";
 import { UseQueryOptions } from "@tanstack/react-query";
 import { useTamboClient } from "../providers/tambo-client-provider";
+import { useTamboProject } from "../providers/tambo-project-provider";
 import { useTamboQuery } from "./react-query-hooks";
 
 interface UseTamboThreadListConfig {
@@ -41,24 +42,24 @@ interface UseTamboThreadListConfig {
  * @returns The threads for the specified project and optional context key
  */
 export function useTamboThreadList(
-  { projectId, contextKey }: UseTamboThreadListConfig = {},
+  { projectId: projectIdProp, contextKey }: UseTamboThreadListConfig = {},
   options: Partial<
     UseQueryOptions<TamboAI.Beta.Threads.ThreadsOffsetAndLimit | null>
   > = {},
 ) {
   const client = useTamboClient();
-  const { data: queriedProjectId, ...projectIdState } = useTamboQuery({
-    ...(options as unknown as UseQueryOptions<string>),
-    queryKey: ["projectId"],
-    queryFn: async () => {
-      return (await client.beta.projects.getCurrent()).id;
-    },
-  });
-  const currentProjectId = projectId ?? queriedProjectId;
+  const {
+    projectId: contextProjectId,
+    isLoading: isProjectLoading,
+    error: projectError,
+  } = useTamboProject();
+
+  // Use provided projectId or fallback to context projectId
+  const currentProjectId = projectIdProp ?? contextProjectId;
 
   const threadState = useTamboQuery({
     ...options,
-    enabled: !!currentProjectId,
+    enabled: !!currentProjectId && !isProjectLoading,
     queryKey: ["threads", currentProjectId, contextKey],
     queryFn: async () => {
       if (!currentProjectId) {
@@ -71,5 +72,29 @@ export function useTamboThreadList(
     },
   });
 
-  return currentProjectId ? threadState : { data: null, ...projectIdState };
+  // If we're still loading the project ID, return loading state
+  if (isProjectLoading && !projectIdProp) {
+    return {
+      data: null,
+      isLoading: true,
+      error: null,
+      isError: false,
+      isSuccess: false,
+      refetch: threadState.refetch,
+    };
+  }
+
+  // If there was an error loading the project ID, return error state
+  if (projectError && !projectIdProp) {
+    return {
+      data: null,
+      isLoading: false,
+      error: projectError,
+      isError: true,
+      isSuccess: false,
+      refetch: threadState.refetch,
+    };
+  }
+
+  return threadState;
 }

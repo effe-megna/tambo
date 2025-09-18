@@ -36,8 +36,15 @@ interface ThreadHistoryContextValue {
   onThreadChange?: () => void;
   contextKey?: string;
   position?: "left" | "right";
-  updateThreadName: (newName: string, threadId?: string) => Promise<void>;
-  generateThreadName: (threadId: string) => Promise<TamboThread>;
+  updateThreadName: (
+    newName: string,
+    threadId?: string,
+    contextKey?: string,
+  ) => Promise<void>;
+  generateThreadName: (
+    threadId: string,
+    contextKey?: string,
+  ) => Promise<TamboThread>;
 }
 
 const ThreadHistoryContext =
@@ -354,7 +361,7 @@ const ThreadHistoryList = React.forwardRef<
     onThreadChange,
     updateThreadName,
     generateThreadName,
-    refetch,
+    contextKey,
   } = useThreadHistoryContext();
 
   const [editingThread, setEditingThread] = React.useState<TamboThread | null>(
@@ -431,8 +438,7 @@ const ThreadHistoryList = React.forwardRef<
 
   const handleGenerateName = async (thread: TamboThread) => {
     try {
-      await generateThreadName(thread.id);
-      await refetch();
+      await generateThreadName(thread.id, contextKey);
     } catch (error) {
       console.error("Failed to generate name:", error);
     }
@@ -442,10 +448,10 @@ const ThreadHistoryList = React.forwardRef<
     e.preventDefault();
     if (!editingThread) return;
 
+    setEditingThread(null);
+
     try {
-      await updateThreadName(newName, editingThread.id);
-      await refetch();
-      setEditingThread(null);
+      await updateThreadName(newName, editingThread.id, contextKey);
     } catch (error) {
       console.error("Failed to rename thread:", error);
     }
